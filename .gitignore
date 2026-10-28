@@ -1,0 +1,4 @@
+# se generan solos en el servidor
+data/backups/
+data/admin.json
+data/login.json
