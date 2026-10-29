@@ -11,7 +11,16 @@
    "H3REDfzSMSU"
   ]
  },
- "galeria": [],
+ "galeria": [
+  {"chica": "/img/galeria/2026/foto1.jpg", "grande": "/img/galeria/2026/foto1.jpg"},
+  {"chica": "/img/galeria/2026/foto2.jpg", "grande": "/img/galeria/2026/foto2.jpg"},
+  {"chica": "/img/galeria/2026/foto3.jpg", "grande": "/img/galeria/2026/foto3.jpg"},
+  {"chica": "/img/galeria/2026/foto4.jpg", "grande": "/img/galeria/2026/foto4.jpg"},
+  {"chica": "/img/galeria/2026/foto5.jpg", "grande": "/img/galeria/2026/foto5.jpg"},
+  {"chica": "/img/galeria/2026/foto6.jpg", "grande": "/img/galeria/2026/foto6.jpg"},
+  {"chica": "/img/galeria/2026/foto7.jpg", "grande": "/img/galeria/2026/foto7.jpg"},
+  {"chica": "/img/galeria/2026/foto8.jpg", "grande": "/img/galeria/2026/foto8.jpg"}
+ ],
  "imagenes": {
   "hero": "/img/2020/06/10819098_10154894705260608_1660219356_n-1.jpg",
   "retrato": "/img/2020/06/pose-705x1024.png",

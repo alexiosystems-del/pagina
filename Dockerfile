@@ -21,8 +21,8 @@ RUN { \
 
 COPY . /var/www/html/
 RUN rm -f /var/www/html/Dockerfile /var/www/html/.dockerignore \
- && mkdir -p /var/www/html/data/backups /var/www/html/img/productos \
- && chown -R www-data:www-data /var/www/html/data /var/www/html/img/productos
+ && mkdir -p /var/www/html/data/backups /var/www/html/img/productos /var/www/html/img/galeria \
+ && chown -R www-data:www-data /var/www/html/data /var/www/html/img/productos /var/www/html/img/galeria
 
 # Render indica el puerto en la variable PORT (por defecto 10000)
 ENV PORT=10000

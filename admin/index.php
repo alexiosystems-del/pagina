@@ -1,5 +1,5 @@
 <?php
-// Panel de administración: productos del catálogo, precios, fotos y videos.
+// Panel de administración: productos del catálogo, precios, fotos, videos y galería.
 require dirname(__DIR__) . '/app/core.php';
 
 const MAX_UPLOAD = 10 * 1024 * 1024;
@@ -83,7 +83,7 @@ function login_failed(): void
 }
 
 // ------------------------------------------------------------- imágenes
-function save_upload(array $f): ?string
+function save_upload(array $f, string $folder = 'productos'): ?string
 {
     if (($f['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
         return null;
@@ -97,7 +97,7 @@ function save_upload(array $f): ?string
         throw new RuntimeException('"' . $f['name'] . '" no es una imagen JPG, PNG, WEBP o GIF.');
     }
     $ext = $types[$info[2]];
-    $dir = BASE_DIR . '/img/productos/' . date('Y');
+    $dir = BASE_DIR . '/img/' . $folder . '/' . date('Y');
     if (!is_dir($dir)) {
         mkdir($dir, 0755, true);
     }
@@ -106,7 +106,7 @@ function save_upload(array $f): ?string
     if (!resize_image($f['tmp_name'], $dest, $info) && !move_uploaded_file($f['tmp_name'], $dest)) {
         throw new RuntimeException('No se pudo guardar la imagen.');
     }
-    return '/img/productos/' . date('Y') . '/' . $name;
+    return '/img/' . $folder . '/' . date('Y') . '/' . $name;
 }
 
 /** Achica fotos grandes si el servidor tiene GD. Devuelve false si no hizo nada. */
@@ -144,7 +144,7 @@ function files_array(array $f): array
         return $out;
     }
     foreach ($f['name'] as $i => $n) {
-        $out[] = ['name' => $n, 'type' => $f['type'][$i], 'tmp_name' => $f['tmp_name'][$i], 'error' => $f['error'][$i], 'size' => $f['size'][$i]];
+        $out[$i] = ['name' => $n, 'type' => $f['type'][$i], 'tmp_name' => $f['tmp_name'][$i], 'error' => $f['error'][$i], 'size' => $f['size'][$i]];
     }
     return $out;
 }
@@ -152,7 +152,7 @@ function files_array(array $f): array
 /** Borra del disco una foto subida desde el panel (las migradas del sitio viejo no se tocan). */
 function delete_upload(?string $url): void
 {
-    if ($url && preg_match('~^/img/productos/\d{4}/[\w-]+\.(jpg|png|webp|gif)$~', $url)) {
+    if ($url && preg_match('~^/img/(productos|galeria)/\d{4}/[\w-]+\.(jpg|png|webp|gif)$~', $url)) {
         @unlink(BASE_DIR . $url);
     }
 }
@@ -247,12 +247,50 @@ function product_from_post(array $list, ?array $old): array
     return $p;
 }
 
+// ------------------------------------------------------------- galería
+function gallery_from_post(array $old, array &$borrar): array
+{
+    $orden = (array)($_POST['orden'] ?? []);
+    $quitar = array_map('intval', (array)($_POST['quitar'] ?? []));
+    $reemplazos = files_array($_FILES['reemplazo'] ?? []);
+    $items = [];
+    foreach ($old as $k => $g) {
+        if (in_array($k, $quitar, true)) {
+            $borrar[] = $g['grande'];
+            $borrar[] = $g['chica'];
+            continue;
+        }
+        if (isset($reemplazos[$k]) && ($u = save_upload($reemplazos[$k], 'galeria'))) {
+            $borrar[] = $g['grande'];
+            $borrar[] = $g['chica'];
+            $g = ['chica' => $u, 'grande' => $u];
+        }
+        $items[] = [(float)($orden[$k] ?? $k + 1), $k, $g];
+    }
+    // las fotos nuevas van al final
+    $n = count($old);
+    foreach (files_array($_FILES['fotos'] ?? []) as $f) {
+        if ($u = save_upload($f, 'galeria')) {
+            $items[] = [INF, $n++, ['chica' => $u, 'grande' => $u]];
+        }
+    }
+    usort($items, function ($a, $b) {
+        return $a[0] <=> $b[0] ?: $a[1] <=> $b[1];
+    });
+    return array_column($items, 2);
+}
+
 // ------------------------------------------------------------- acciones
 $conf = admin_conf();
 $action = $_GET['a'] ?? '';
 $logged = !empty($_SESSION['ok']) && ($_SESSION['ver'] ?? '') === ($conf['hash'] ?? '');
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // si lo enviado supera post_max_size, PHP descarta todo el formulario
+    if (empty($_POST) && (int)($_SERVER['CONTENT_LENGTH'] ?? 0) > 0) {
+        flash('Lo que intentaste subir pesa más de lo que permite el servidor. Probá con menos fotos por vez.', 'error');
+        go($action !== '' ? 'a=' . rawurlencode($action) : '');
+    }
     check_csrf();
     $do = $_POST['do'] ?? '';
     try {
@@ -345,6 +383,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             flash('Videos de inicio guardados.');
             go('a=home');
         }
+        if ($do === 'gallery') {
+            $s = sitio();
+            $borrar = [];
+            $s['galeria'] = gallery_from_post($s['galeria'] ?? [], $borrar);
+            write_json('sitio.json', $s);
+            foreach (array_unique($borrar) as $f) {
+                delete_upload($f);
+            }
+            flash('Galería guardada.');
+            go('a=gallery');
+        }
         if ($do === 'password') {
             if (!password_verify((string)($_POST['actual'] ?? ''), $conf['hash'])) {
                 throw new RuntimeException('La contraseña actual no es correcta.');
@@ -380,7 +429,7 @@ function head(string $title): void
 <meta name="robots" content="noindex">
 <title><?= e($title) ?> · Panel Marduk</title>
 <link rel="icon" href="/img/favicon.jpg">
-<link rel="stylesheet" href="/admin/admin.css?v=1">
+<link rel="stylesheet" href="/admin/admin.css?v=2">
 </head>
 <body>
 <?php if (!empty($_SESSION['ok'])): ?>
@@ -389,6 +438,7 @@ function head(string $title): void
   <nav>
     <a href="/admin/">Productos</a>
     <a href="/admin/?a=edit" class="primary">+ Nuevo producto</a>
+    <a href="/admin/?a=gallery">Galería</a>
     <a href="/admin/?a=home">Videos y ajustes</a>
     <a href="/" target="_blank" rel="noopener">Ver sitio ↗</a>
     <form method="post"><?= csrf_field() ?><input type="hidden" name="do" value="logout"><button class="linkish">Salir</button></form>
@@ -522,6 +572,44 @@ if ($action === 'edit') {
   <button class="btn red">Eliminar producto</button>
 </form>
 <?php endif ?>
+<?php
+    foot();
+    exit;
+}
+
+if ($action === 'gallery') {
+    $fotos = sitio()['galeria'] ?? [];
+    head('Galería');
+    ?>
+<form method="post" enctype="multipart/form-data" class="edit">
+  <?= csrf_field() ?><input type="hidden" name="do" value="gallery">
+  <div class="list-head">
+    <h1>Galería <span class="count"><?= count($fotos) ?></span></h1>
+    <a href="/galeria-de-imagenes/" target="_blank" rel="noopener">Ver la galería ↗</a>
+  </div>
+  <section class="box">
+    <h2>Agregar fotos</h2>
+    <label>Fotos nuevas<input type="file" name="fotos[]" accept="image/jpeg,image/png,image/webp,image/gif" multiple></label>
+    <small>Se agregan al final de la galería. JPG, PNG o WEBP, hasta 10 MB cada una. Las primeras 6 también se ven en la página de inicio.</small>
+  </section>
+  <?php if ($fotos): ?>
+  <ul class="gallery-admin">
+    <?php foreach ($fotos as $k => $g): ?>
+    <li>
+      <img src="<?= e($g['chica']) ?>" alt="" loading="lazy">
+      <label>Orden<input type="number" name="orden[<?= $k ?>]" value="<?= $k + 1 ?>" min="1" step="1"></label>
+      <label>Reemplazar por<input type="file" name="reemplazo[<?= $k ?>]" accept="image/jpeg,image/png,image/webp,image/gif"></label>
+      <label class="check small"><input type="checkbox" name="quitar[]" value="<?= $k ?>"> Quitar de la galería</label>
+    </li>
+    <?php endforeach ?>
+  </ul>
+  <small>Para cambiar el orden, cambiá los números (la foto con 1 va primera) y guardá.</small>
+  <?php endif ?>
+  <div class="save-bar">
+    <button class="btn">Guardar galería</button>
+    <a href="/admin/?a=gallery">Cancelar</a>
+  </div>
+</form>
 <?php
     foot();
     exit;

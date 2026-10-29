@@ -54,13 +54,18 @@ if (q) {
   });
 }
 
-// Formulario de contacto: arma el mensaje y abre WhatsApp
+// Formulario de contacto: arma el mensaje y abre WhatsApp o el programa de email
 const form = document.querySelector('.wa-form');
 if (form) {
   form.addEventListener('submit', (e) => {
     e.preventDefault();
     const name = form.elements.name.value.trim();
     const msg = form.elements.msg.value.trim();
+    if (e.submitter && e.submitter.value === 'mail') {
+      const body = msg + (name ? `\n\n${name}` : '');
+      location.href = `mailto:${form.dataset.email}?subject=${encodeURIComponent(form.dataset.subject)}&body=${encodeURIComponent(body)}`;
+      return;
+    }
     const text = (name ? `${name}: ` : '') + msg;
     window.open(`https://wa.me/${form.dataset.number}?text=${encodeURIComponent(text)}`, '_blank', 'noopener');
   });

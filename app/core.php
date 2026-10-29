@@ -4,6 +4,7 @@
 const SITE_URL = 'https://www.marduk.com.ar';
 const WA_NUMBER = '5491153121510';
 const WA_DISPLAY = '+54 9 11 5312-1510';
+const EMAIL = 'info@marduk.com.ar';
 
 define('BASE_DIR', dirname(__DIR__));
 define('DATA_DIR', BASE_DIR . '/data');

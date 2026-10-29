@@ -3,7 +3,8 @@
 
 const ICON_WA = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12.04 2a9.9 9.9 0 0 0-8.52 14.95L2 22l5.2-1.49A9.9 9.9 0 1 0 12.04 2Zm0 18.1a8.2 8.2 0 0 1-4.18-1.15l-.3-.18-3.09.88.83-3.01-.2-.31a8.2 8.2 0 1 1 6.94 3.77Zm4.5-6.14c-.25-.12-1.46-.72-1.69-.8-.23-.08-.39-.12-.56.12-.16.25-.64.8-.78.97-.14.16-.29.18-.53.06a6.7 6.7 0 0 1-3.32-2.9c-.25-.43.25-.4.71-1.33.08-.16.04-.31-.02-.43l-.76-1.83c-.2-.48-.4-.41-.56-.42h-.47a.9.9 0 0 0-.66.31 2.77 2.77 0 0 0-.86 2.06 4.8 4.8 0 0 0 1 2.55 11 11 0 0 0 4.2 3.71c1.57.68 2.18.74 2.96.62.48-.07 1.46-.6 1.67-1.18.2-.58.2-1.08.14-1.18-.06-.1-.22-.16-.47-.28Z"/></svg>';
 const ICON_PLAY = '<svg viewBox="0 0 68 48" aria-hidden="true"><path d="M66.5 7.7A8.5 8.5 0 0 0 60.5 1.6C55.2 0 34 0 34 0S12.8 0 7.5 1.6a8.5 8.5 0 0 0-6 6.1C0 13 0 24 0 24s0 11 1.5 16.3a8.5 8.5 0 0 0 6 6.1C12.8 48 34 48 34 48s21.2 0 26.5-1.6a8.5 8.5 0 0 0 6-6.1C68 35 68 24 68 24s0-11-1.5-16.3Z" fill="#c9302c"/><path d="m27 34 18-10-18-10z" fill="#fff"/></svg>';
-const ICON_SEARCH = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" d="m21 21-4.3-4.3M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Z"/></svg>';
+const ICON_MAIL = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" d="M3 6h18v12H3zM3 7l9 6 9-6"/></svg>';
+const ICON_SEARCH ='<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" d="m21 21-4.3-4.3M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Z"/></svg>';
 
 function t(string $lang, string $key)
 {
@@ -83,7 +84,7 @@ function layout(string $lang, string $key, string $title, string $body, string $
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/assets/style.css?v=2">
+<link rel="stylesheet" href="/assets/style.css?v=3">
 </head>
 <body class="<?= e($opt['class'] ?? '') ?>">
 <a class="skip" href="#main"><?= e(t($lang, 'skip')) ?></a>
@@ -107,13 +108,13 @@ function layout(string $lang, string $key, string $title, string $body, string $
       <p><?= e(t($lang, 'footer')) ?></p>
     </div>
     <ul class="footer-nav"><?= $nav ?></ul>
-    <div><?= btn_wa(t($lang, 'wa_hello'), WA_DISPLAY) ?></div>
+    <div><?= btn_wa(t($lang, 'wa_hello'), WA_DISPLAY) ?><p class="footer-mail"><a href="mailto:<?= EMAIL ?>"><?= EMAIL ?></a></p></div>
   </div>
   <p class="wrap copy">© <?= date('Y') ?> Quique Marduk</p>
 </footer>
 <a class="wa-float" href="<?= e($wa_hello) ?>" target="_blank" rel="noopener" aria-label="WhatsApp"><?= ICON_WA ?></a>
 <dialog class="lightbox" aria-label="<?= e(t($lang, 'gallery')) ?>"><button type="button" class="lb-close" aria-label="<?= e(t($lang, 'close')) ?>">×</button><img alt=""></dialog>
-<script src="/assets/site.js?v=2" defer></script>
+<script src="/assets/site.js?v=3" defer></script>
 </body>
 </html>
 <?php
@@ -232,11 +233,13 @@ function page_courses(string $lang): string
 function page_contact(string $lang): string
 {
     $c = '<h1>' . e(t($lang, 'contact')) . '</h1><p class="lead">' . e(t($lang, 'contact_lead')) . '</p>'
-        . btn_wa(t($lang, 'wa_hello'), WA_DISPLAY, 'big')
-        . '<form class="wa-form" data-number="' . WA_NUMBER . '">'
+        . '<div class="actions">' . btn_wa(t($lang, 'wa_hello'), WA_DISPLAY, 'big')
+        . '<a class="btn btn-ghost big" href="mailto:' . EMAIL . '">' . ICON_MAIL . ' ' . EMAIL . '</a></div>'
+        . '<form class="wa-form" data-number="' . WA_NUMBER . '" data-email="' . EMAIL . '" data-subject="' . e(t($lang, 'mail_subject')) . '">'
         . '<label>' . e(t($lang, 'name')) . '<input name="name" autocomplete="name"></label>'
         . '<label>' . e(t($lang, 'message')) . '<textarea name="msg" rows="5" required></textarea></label>'
-        . '<button class="btn btn-gold" type="submit">' . e(t($lang, 'send')) . '</button></form>';
+        . '<div class="actions"><button class="btn btn-gold" type="submit" value="wa">' . e(t($lang, 'send')) . '</button>'
+        . '<button class="btn btn-ghost" type="submit" value="mail">' . e(t($lang, 'send_mail')) . '</button></div></form>';
     return page_split($lang, 'contact', t($lang, 'contact'), $c, sitio()['imagenes']['contacto']);
 }
 
